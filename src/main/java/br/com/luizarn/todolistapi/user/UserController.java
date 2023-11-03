@@ -33,4 +33,19 @@ public class UserController {
         var userCreated = this.userRepository.save(userModel);
         return ResponseEntity.status(HttpStatus.OK).body(userCreated);
     }
+
+    @PostMapping("/login")
+    public ResponseEntity login(@RequestBody LoginModel loginModel) {
+       var user = this.userRepository.findByemail(loginModel.getEmail());
+       if (user == null) {
+           return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+       }
+    
+       var passwordVerify = BCrypt.verifyer().verify(loginModel.getPassword().toCharArray(), user.getPassword());
+       if (!passwordVerify.verified) {
+           return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid password");
+       }
+    
+       return ResponseEntity.status(HttpStatus.OK).body(user);
+    }
 }

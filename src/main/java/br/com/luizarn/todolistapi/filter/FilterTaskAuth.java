@@ -15,7 +15,7 @@ import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
 
-//toda classe que quero que spring gerencia, preciso colocar
+
 @Component
 public class FilterTaskAuth extends OncePerRequestFilter {
 
