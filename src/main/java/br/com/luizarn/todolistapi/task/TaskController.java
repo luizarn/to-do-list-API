@@ -1,6 +1,5 @@
 package br.com.luizarn.todolistapi.task;
 
-
 import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
@@ -23,25 +22,24 @@ public class TaskController {
     @Autowired
     private ITaskRepository taskRepository;
 
-     @Autowired
+    @Autowired
     private IUserRepository userRepository;
 
     @PostMapping("/")
     public ResponseEntity create(@RequestBody TaskModel taskModel, HttpServletRequest request) {
-    var userId = (int) request.getAttribute("userId");
-     
-    UserModel user = userRepository.findById(userId).orElse(null);
-    
-    if (user == null) {
-        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found");
+        var userId = (int) request.getAttribute("userId");
+
+        UserModel user = userRepository.findById(userId).orElse(null);
+
+        if (user == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found");
+        }
+
+        taskModel.setUser(user);
+
+        var task = this.taskRepository.save(taskModel);
+        return ResponseEntity.status(HttpStatus.CREATED).body(task);
     }
-
-    taskModel.setUser(user);
-
-    var task = this.taskRepository.save(taskModel);
-    return ResponseEntity.status(HttpStatus.OK).body(task);
-    }
-
 
     @GetMapping("/")
     public List<TaskModel> list(HttpServletRequest request) {
@@ -49,6 +47,27 @@ public class TaskController {
         var tasks = this.taskRepository.findByUserId(userId);
         return tasks;
     }
+
+    @GetMapping("/{id}")
+    public ResponseEntity listone(@PathVariable int id, HttpServletRequest request) {
+        var task = this.taskRepository.findById(id).orElse(null);
+
+        if (task == null) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("Task not found");
+        }
+
+        var idUser = (Integer) request.getAttribute("userId");
+
+        if (task.getUser().getId() != idUser) {
+            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+                    .body("User does not have permission to list this task");
+        }
+
+        var taskListed = this.taskRepository.findById(id);
+        return ResponseEntity.status(HttpStatus.OK).body(taskListed);
+    }
+
 
     @PutMapping("/{id}")
     public ResponseEntity updte(@RequestBody TaskModel taskModel, @PathVariable int id, HttpServletRequest request) {
@@ -76,6 +95,6 @@ public class TaskController {
         }
 
         var taskUpdated = this.taskRepository.save(task);
-        return ResponseEntity.ok().body(taskUpdated);
+        return ResponseEntity.status(HttpStatus.OK).body(taskUpdated);
     }
 }
