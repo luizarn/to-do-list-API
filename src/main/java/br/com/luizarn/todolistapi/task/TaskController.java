@@ -4,6 +4,7 @@ import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -32,7 +33,7 @@ public class TaskController {
         UserModel user = userRepository.findById(userId).orElse(null);
 
         if (user == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
         }
 
         taskModel.setUser(user);
@@ -53,7 +54,7 @@ public class TaskController {
         var task = this.taskRepository.findById(id).orElse(null);
 
         if (task == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Task not found");
         }
 
@@ -68,20 +69,19 @@ public class TaskController {
         return ResponseEntity.status(HttpStatus.OK).body(taskListed);
     }
 
-
     @PutMapping("/{id}")
-    public ResponseEntity updte(@RequestBody TaskModel taskModel, @PathVariable int id, HttpServletRequest request) {
+    public ResponseEntity update(@RequestBody TaskModel taskModel, @PathVariable int id, HttpServletRequest request) {
         var task = this.taskRepository.findById(id).orElse(null);
 
         if (task == null) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
                     .body("Task not found");
         }
 
         var idUser = (Integer) request.getAttribute("userId");
 
         if (task.getUser().getId() != idUser) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
                     .body("User does not have permission to modify this task");
         }
         try {
@@ -96,5 +96,25 @@ public class TaskController {
 
         var taskUpdated = this.taskRepository.save(task);
         return ResponseEntity.status(HttpStatus.OK).body(taskUpdated);
+    }
+
+    @DeleteMapping("/{id}")
+    public ResponseEntity delete(@PathVariable int id, HttpServletRequest request) {
+        var task = this.taskRepository.findById(id).orElse(null);
+
+        if (task == null) {
+            return ResponseEntity.status(HttpStatus.NOT_FOUND)
+                    .body("Task not found");
+        }
+
+        var idUser = (Integer) request.getAttribute("userId");
+
+        if (task.getUser().getId() != idUser) {
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED)
+                    .body("User does not have permission to delete this task");
+        }
+
+        this.taskRepository.deleteById(id);
+        return ResponseEntity.status(HttpStatus.NO_CONTENT).build();
     }
 }

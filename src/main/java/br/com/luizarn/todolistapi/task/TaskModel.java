@@ -41,7 +41,7 @@ public class TaskModel {
     private String status;
 
     
-    @ManyToOne(cascade = CascadeType.ALL)
+    @ManyToOne
     @JoinColumn(name = "user_id")
     private UserModel user;
 
