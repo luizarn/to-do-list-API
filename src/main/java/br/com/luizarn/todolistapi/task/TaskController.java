@@ -1,9 +1,7 @@
 package br.com.luizarn.todolistapi.task;
 
-import java.time.LocalDateTime;
-import java.util.List;
-import java.util.UUID;
 
+import java.util.List;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -14,8 +12,8 @@ import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
-
-import br.com.luizarn.todolistapi.utils.Utils;
+import br.com.luizarn.todolistapi.user.IUserRepository;
+import br.com.luizarn.todolistapi.user.UserModel;
 import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
@@ -25,36 +23,35 @@ public class TaskController {
     @Autowired
     private ITaskRepository taskRepository;
 
+     @Autowired
+    private IUserRepository userRepository;
+
     @PostMapping("/")
     public ResponseEntity create(@RequestBody TaskModel taskModel, HttpServletRequest request) {
-        var idUser = request.getAttribute("idUser");
-        taskModel.setIdUser((UUID) idUser);
-
-        var currentDate = LocalDateTime.now();
-
-        if (currentDate.isAfter(taskModel.getStartAt()) || currentDate.isAfter(taskModel.getEndAt())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("The start date/end date must be greater than the current date");
-        }
-
-        if (taskModel.getStartAt().isAfter(taskModel.getEndAt())) {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST)
-                    .body("The start date must be before the end date");
-        }
-
-        var task = this.taskRepository.save(taskModel);
-        return ResponseEntity.status(HttpStatus.OK).body(task);
+    var userId = (int) request.getAttribute("userId");
+     
+    UserModel user = userRepository.findById(userId).orElse(null);
+    
+    if (user == null) {
+        return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("User not found");
     }
+
+    taskModel.setUser(user);
+
+    var task = this.taskRepository.save(taskModel);
+    return ResponseEntity.status(HttpStatus.OK).body(task);
+    }
+
 
     @GetMapping("/")
     public List<TaskModel> list(HttpServletRequest request) {
-        var idUser = request.getAttribute("idUser");
-        var tasks = this.taskRepository.findByIdUser((UUID) idUser);
+        int userId = (int) request.getAttribute("userId");
+        var tasks = this.taskRepository.findByUserId(userId);
         return tasks;
     }
 
     @PutMapping("/{id}")
-    public ResponseEntity updte(@RequestBody TaskModel taskModel, @PathVariable UUID id, HttpServletRequest request) {
+    public ResponseEntity updte(@RequestBody TaskModel taskModel, @PathVariable int id, HttpServletRequest request) {
         var task = this.taskRepository.findById(id).orElse(null);
 
         if (task == null) {
@@ -62,14 +59,21 @@ public class TaskController {
                     .body("Task not found");
         }
 
-        var idUser = request.getAttribute("idUser");
+        var idUser = (Integer) request.getAttribute("userId");
 
-        if (!task.getIdUser().equals(idUser)) {
+        if (task.getUser().getId() != idUser) {
             return ResponseEntity.status(HttpStatus.BAD_REQUEST)
                     .body("User does not have permission to modify this task");
         }
-
-        Utils.copyNonNullProperties(taskModel, task);
+        try {
+            task.setTitle(taskModel.getTitle());
+            task.setDescription(taskModel.getDescription());
+            task.setStatus(taskModel.getStatus());
+        } catch (Exception e) {
+            e.printStackTrace();
+            return ResponseEntity.status(HttpStatus.INTERNAL_SERVER_ERROR)
+                    .body("Error updating task");
+        }
 
         var taskUpdated = this.taskRepository.save(task);
         return ResponseEntity.ok().body(taskUpdated);

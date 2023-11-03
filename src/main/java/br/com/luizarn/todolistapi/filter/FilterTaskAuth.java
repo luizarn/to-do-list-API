@@ -35,17 +35,17 @@ public class FilterTaskAuth extends OncePerRequestFilter {
             var authString = new String(authDecode);
 
             String[] credentials = authString.split(":");
-            String username = credentials[0];
+            String email = credentials[0];
             String password = credentials[1];
             
-            var user = this.userRepository.findByUsername(username);
+            var user = this.userRepository.findByemail(email);
             if (user == null) {
                 response.sendError(401);
             } else {
                 var passwordVerify = BCrypt.verifyer().verify(password.toCharArray(), user.getPassword());
                 if (passwordVerify.verified) {
                    
-                    request.setAttribute("idUser", user.getId());
+                    request.setAttribute("userId", user.getId());
                     filterChain.doFilter(request, response);
                 } else{
                     response.sendError(401);

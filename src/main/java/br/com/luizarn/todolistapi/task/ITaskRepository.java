@@ -1,11 +1,9 @@
 package br.com.luizarn.todolistapi.task;
 
-import java.util.UUID;
-
 import org.springframework.data.jpa.repository.JpaRepository;
 import java.util.List;
 
 
-public interface ITaskRepository extends JpaRepository<TaskModel, UUID>{
-    List<TaskModel> findByIdUser(UUID idUser);
+public interface ITaskRepository extends JpaRepository<TaskModel, Integer>{
+    List<TaskModel> findByUserId(int userId);
 }
