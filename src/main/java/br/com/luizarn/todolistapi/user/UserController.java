@@ -9,6 +9,10 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import at.favre.lib.crypto.bcrypt.BCrypt;
+import jakarta.persistence.Entity;
+import jakarta.persistence.Table;
+import lombok.Data;
+
 import java.util.UUID;
 
 @RestController
@@ -41,45 +45,27 @@ public class UserController {
         return ResponseEntity.status(HttpStatus.OK).body(userCreated);
     }
 
-    // @PostMapping("/login")
-    // public ResponseEntity login(@RequestBody LoginModel loginModel) {
-    // var user = this.userRepository.findByemail(loginModel.getEmail());
-    // if (user == null) {
-    // return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
-    // }
+    @Data
+    public class LoginResponse {
+        private String token;
+        private String name;
 
-    // var passwordVerify =
-    // BCrypt.verifyer().verify(loginModel.getPassword().toCharArray(),
-    // user.getPassword());
-    // if (!passwordVerify.verified) {
-    // return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid
-    // password");
-    // }
+        public LoginResponse(String token, String name) {
+            this.token = token;
+            this.name = name;
+        }
+    }
 
-    // String token = generateToken();
-    // var session = this.sessionRepository.findFirstByUser(user.getId());
-    // if (session == null) {
-    // session = new SessionModel();
-    // session.set(user);
-    // session.setToken(token);
-    // this.sessionRepository.save(session);
-    // } else {
-    // session.setToken(token);
-    // this.sessionRepository.save(session);
-    // }
-
-    // return ResponseEntity.status(HttpStatus.OK).body(token);
-    // }
     @PostMapping("/login")
-    public ResponseEntity login(@RequestBody LoginModel loginModel) {
+    public ResponseEntity<LoginResponse> login(@RequestBody LoginModel loginModel) {
         var user = this.userRepository.findByemail(loginModel.getEmail());
         if (user == null) {
-            return ResponseEntity.status(HttpStatus.NOT_FOUND).body("User not found");
+            return ResponseEntity.status(HttpStatus.NOT_FOUND).body(new LoginResponse(null, "User not found"));
         }
 
         var passwordVerify = BCrypt.verifyer().verify(loginModel.getPassword().toCharArray(), user.getPassword());
         if (!passwordVerify.verified) {
-            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body("Invalid password");
+            return ResponseEntity.status(HttpStatus.UNAUTHORIZED).body(new LoginResponse(null, "Invalid password"));
         }
 
         String token = generateToken();
@@ -96,6 +82,7 @@ public class UserController {
             this.sessionRepository.save(session);
         }
 
-        return ResponseEntity.status(HttpStatus.OK).body(token);
+        LoginResponse loginResponse = new LoginResponse(token, user.getName());
+        return ResponseEntity.status(HttpStatus.OK).body(loginResponse);
     }
 }
